@@ -4,6 +4,8 @@ export const PACKAGES = {
     name: 'Start+',
     maxApplicants: 1,
     priceInCents: 29900,
+    stripePriceId: 'price_1TCPpe7fFXNXhdEIqgPRclYf',
+    stripeProductId: 'prod_UAlMSvR8w7D7vF',
     features: [
       'Assessoria para 1 solicitante',
       'Preenchimento do DS-160',
@@ -18,6 +20,8 @@ export const PACKAGES = {
     name: 'Pro+',
     maxApplicants: 3,
     priceInCents: 59900,
+    stripePriceId: 'price_1TCPpn7fFXNXhdEI8vGEZ8cl',
+    stripeProductId: 'prod_UAlMawOEjk47RU',
     features: [
       'Assessoria para até 3 solicitantes',
       'Preenchimento do DS-160 completo',
@@ -34,6 +38,8 @@ export const PACKAGES = {
     name: 'Vip+',
     maxApplicants: 6,
     priceInCents: 99900,
+    stripePriceId: 'price_1TCPpp7fFXNXhdEI8RKzazuq',
+    stripeProductId: 'prod_UAlMyHVta6c5ZZ',
     features: [
       'Assessoria para até 6 solicitantes',
       'Preenchimento do DS-160 completo',
