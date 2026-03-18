@@ -1,10 +1,11 @@
-import Header from '@/components/landing/Header';
-import Hero from '@/components/landing/Hero';
-import Packages from '@/components/landing/Packages';
-import HowItWorks from '@/components/landing/HowItWorks';
-import Testimonials from '@/components/landing/Testimonials';
-import FAQ from '@/components/landing/FAQ';
-import Footer from '@/components/landing/Footer';
+import Header from '@/components/landing/Header'
+import Hero from '@/components/landing/Hero'
+import Packages from '@/components/landing/Packages'
+import HowItWorks from '@/components/landing/HowItWorks'
+import LeadCapture from '@/components/landing/LeadCapture'
+import Testimonials from '@/components/landing/Testimonials'
+import FAQ from '@/components/landing/FAQ'
+import Footer from '@/components/landing/Footer'
 
 const Index = () => {
   return (
@@ -13,11 +14,12 @@ const Index = () => {
       <Hero />
       <Packages />
       <HowItWorks />
+      <LeadCapture />
       <Testimonials />
       <FAQ />
       <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default Index;
+export default Index
