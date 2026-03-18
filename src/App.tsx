@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Layouts
 import ClientLayout from "@/components/layouts/ClientLayout";
@@ -50,7 +51,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
 
             {/* Client routes */}
-            <Route element={<ClientLayout />}>
+            <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<ClientDashboard />} />
               <Route path="/formulario" element={<Formulario />} />
               <Route path="/taxa-consular" element={<TaxaConsular />} />
@@ -60,7 +61,7 @@ const App = () => (
             </Route>
 
             {/* Admin routes */}
-            <Route element={<AdminLayout />}>
+            <Route element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/processos" element={<Processos />} />
               <Route path="/admin/processos/:id" element={<ProcessoDetalhe />} />
