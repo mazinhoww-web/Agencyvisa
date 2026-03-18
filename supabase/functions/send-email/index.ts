@@ -27,6 +27,7 @@ serve(async (req) => {
         from: "Cia do Visto <noreply@ciadovisto.com.br>",
         to: Array.isArray(to) ? to : [to],
         subject,
+        text: text || subject,
         html: html || undefined,
         text: text || undefined,
       }),
