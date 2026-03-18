@@ -1,10 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '@/integrations/supabase/client'
 import { ProcessStatus } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { FileText, DollarSign, Calendar, FolderOpen, Check } from 'lucide-react'
+import { FileText, DollarSign, Calendar, FolderOpen, Check, Loader2 } from 'lucide-react'
 
 const STATUS_CONFIG: Record<ProcessStatus, { label: string; description: string }> = {
   pending_form: { label: 'Formulário pendente', description: 'Preencha seus dados para iniciarmos o processo.' },
@@ -29,17 +31,21 @@ const STEP_ORDER: ProcessStatus[] = [
   'appointment_requested', 'docs_in_preparation', 'docs_ready', 'completed'
 ]
 
-// Mock data — will come from Supabase in production
-const mockProcess = {
-  id: 'mock-id',
-  package: 'Pro+',
-  maxApplicants: 3,
-  status: 'consular_fee_paid' as ProcessStatus,
-  applicants: [
-    { id: '1', label: 'Solicitante Principal', given_name: 'João', surname: 'Silva', form_step: 8, form_completed_at: '2024-01-15' },
-    { id: '2', label: 'Cônjuge', given_name: 'Maria', surname: 'Silva', form_step: 3, form_completed_at: null },
-    { id: '3', label: 'Filho', given_name: null, surname: null, form_step: 0, form_completed_at: null },
-  ],
+type Applicant = {
+  id: string
+  label: string
+  given_name: string | null
+  surname: string | null
+  form_step: number
+  form_completed_at: string | null
+}
+
+type Process = {
+  id: string
+  package: string
+  max_applicants: number
+  status: ProcessStatus
+  applicants: Applicant[]
 }
 
 function getStepIndex(status: ProcessStatus): number {
@@ -47,7 +53,70 @@ function getStepIndex(status: ProcessStatus): number {
 }
 
 const ClientDashboard = () => {
-  const process = mockProcess
+  const [process, setProcess] = useState<Process | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchProcess = async () => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+          setError('Usuário não autenticado')
+          setLoading(false)
+          return
+        }
+
+        const { data, error: processError } = await supabase
+          .from('processes')
+          .select('*, applicants(*)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (processError) {
+          setError('Erro ao carregar dados')
+          setLoading(false)
+          return
+        }
+
+        if (!data) {
+          setError('Nenhum processo encontrado')
+          setLoading(false)
+          return
+        }
+
+        setProcess(data as unknown as Process)
+      } catch (err) {
+        console.error('Error fetching process:', err)
+        setError('Erro ao carregar dados')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProcess()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Carregando seu processo...</span>
+      </div>
+    )
+  }
+
+  if (error || !process) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-2">Nenhum processo encontrado</h2>
+        <p className="text-muted-foreground">{error || 'Entre em contato com nossa consultora para iniciar seu processo.'}</p>
+      </div>
+    )
+  }
+
   const statusConfig = STATUS_CONFIG[process.status]
   const currentStepIndex = getStepIndex(process.status)
 
@@ -65,13 +134,11 @@ const ClientDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground">Meu processo</h1>
         <p className="text-muted-foreground mt-1">Acompanhe o andamento do seu visto americano</p>
       </div>
 
-      {/* Status Card */}
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <Badge variant="secondary" className="mb-3">{statusConfig.label}</Badge>
@@ -84,7 +151,6 @@ const ClientDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Progress Timeline */}
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-lg">Progresso do processo</CardTitle>
@@ -119,11 +185,10 @@ const ClientDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Applicants */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-display text-lg">
-            Solicitantes ({process.applicants.length}/{process.maxApplicants})
+            Solicitantes ({process.applicants.length}/{process.max_applicants})
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
             <Link to="/formulario">Preencher formulários →</Link>
@@ -158,7 +223,6 @@ const ClientDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Formulário', href: '/formulario', icon: FileText },
