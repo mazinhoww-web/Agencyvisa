@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Menu, X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const navLinks = [
   { label: 'Início', href: '#hero' },
@@ -13,6 +16,18 @@ const navLinks = [
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, profile, loading, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const dashboardPath = isAdmin ? '/admin' : '/dashboard';
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? '?';
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border/50">
@@ -39,12 +54,29 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <a href="/login">Entrar</a>
-          </Button>
-          <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90" asChild>
-            <a href="#packages">Começar agora</a>
-          </Button>
+          {loading ? null : user ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <a href={dashboardPath}>Meu painel</a>
+              </Button>
+              <Avatar className="h-8 w-8 cursor-pointer" onClick={() => navigate(dashboardPath)}>
+                <AvatarImage src={profile?.avatar_url ?? undefined} />
+                <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
+              </Avatar>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSignOut} title="Sair">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="/login">Entrar</a>
+              </Button>
+              <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90" asChild>
+                <a href="#packages">Começar agora</a>
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -76,12 +108,25 @@ const Header = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-3 border-t border-border">
-                <Button variant="outline" size="sm" asChild>
-                  <a href="/login">Entrar</a>
-                </Button>
-                <Button size="sm" className="bg-secondary text-secondary-foreground" asChild>
-                  <a href="#packages">Começar agora</a>
-                </Button>
+                {!loading && user ? (
+                  <>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={dashboardPath}>Meu painel</a>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" /> Sair
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="/login">Entrar</a>
+                    </Button>
+                    <Button size="sm" className="bg-secondary text-secondary-foreground" asChild>
+                      <a href="#packages">Começar agora</a>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </motion.div>

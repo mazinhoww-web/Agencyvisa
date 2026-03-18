@@ -43,26 +43,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // 1. Restore session from storage first
+    supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null
       setUser(currentUser)
       if (currentUser) {
-        await fetchProfileAndRole(currentUser.id)
+        fetchProfileAndRole(currentUser.id).finally(() => setLoading(false))
       } else {
-        setProfile(null)
-        setRole('client')
+        setLoading(false)
       }
-      setLoading(false)
     })
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        await fetchProfileAndRole(currentUser.id)
+    // 2. Listen for subsequent changes (sign in/out) — do NOT await inside callback
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        if (currentUser) {
+          // Fire and forget — no await to avoid deadlock
+          fetchProfileAndRole(currentUser.id)
+        } else {
+          setProfile(null)
+          setRole('client')
+        }
       }
-      setLoading(false)
-    })
+    )
 
     return () => subscription.unsubscribe()
   }, [])
