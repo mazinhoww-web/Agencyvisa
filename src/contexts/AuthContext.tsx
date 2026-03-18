@@ -1,55 +1,96 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { supabase } from '@/integrations/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 type UserRole = 'client' | 'admin'
 
-type AuthUser = {
-  id: string
-  email: string
-  role: UserRole
-}
-
 type AuthContextType = {
-  user: AuthUser | null
+  user: User | null
+  profile: { full_name: string | null; email: string | null; avatar_url: string | null } | null
   loading: boolean
-  signIn: (email: string) => Promise<void>
-  signOut: () => Promise<void>
+  role: UserRole
   isAdmin: boolean
+  signIn: (email: string) => Promise<{ error: Error | null }>
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  profile: null,
   loading: true,
-  signIn: async () => {},
-  signOut: async () => {},
+  role: 'client',
   isAdmin: false,
+  signIn: async () => ({ error: null }),
+  signOut: async () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<AuthContextType['profile']>(null)
+  const [role, setRole] = useState<UserRole>('client')
   const [loading, setLoading] = useState(true)
 
+  const fetchProfileAndRole = async (userId: string) => {
+    const [profileRes, roleRes] = await Promise.all([
+      supabase.from('profiles').select('full_name, email, avatar_url').eq('user_id', userId).single(),
+      supabase.from('user_roles').select('role').eq('user_id', userId),
+    ])
+    if (profileRes.data) setProfile(profileRes.data)
+    if (roleRes.data) {
+      const isAdmin = roleRes.data.some((r: { role: string }) => r.role === 'admin')
+      setRole(isAdmin ? 'admin' : 'client')
+    }
+  }
+
   useEffect(() => {
-    // TODO: Replace with Supabase Auth onAuthStateChange
-    setLoading(false)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        await fetchProfileAndRole(currentUser.id)
+      } else {
+        setProfile(null)
+        setRole('client')
+      }
+      setLoading(false)
+    })
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        await fetchProfileAndRole(currentUser.id)
+      }
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async (_email: string) => {
-    // TODO: Implement with Supabase Auth magic link
-    console.log('Sign in will be implemented with Lovable Cloud')
+  const signIn = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin + '/dashboard' },
+    })
+    return { error: error ? new Error(error.message) : null }
   }
 
   const signOut = async () => {
-    // TODO: Implement with Supabase Auth
+    await supabase.auth.signOut()
     setUser(null)
+    setProfile(null)
+    setRole('client')
   }
 
   return (
     <AuthContext.Provider value={{
       user,
+      profile,
       loading,
+      role,
+      isAdmin: role === 'admin',
       signIn,
       signOut,
-      isAdmin: user?.role === 'admin',
     }}>
       {children}
     </AuthContext.Provider>
