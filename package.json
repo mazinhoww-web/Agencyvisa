@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion:studio": "npx remotion studio src/remotion/index.ts",
+    "remotion:render": "npx remotion render src/remotion/index.ts AprovacaoStory",
+    "remotion:batch": "node render-batch.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -46,7 +49,13 @@
     "sonner": "^2.0.7",
     "stripe": "^20.4.1",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "remotion": "^4.0.0",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "@remotion/player": "^4.0.0",
+    "@remotion/renderer": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
